@@ -125,7 +125,7 @@ export function crearApp() {
               planilla: tipo === 'planilla' ? normalizarPlanilla(valor) : '-',
               estadoMigracion: 'Error',
               httpStatus: null,
-              mensaje: 'No se encontraron registros en Silogtran para este criterio.',
+              mensaje: 'Registro no encontrado para este documento.',
               info: null,
             },
           ],

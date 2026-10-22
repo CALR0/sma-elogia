@@ -80,14 +80,14 @@ function parsearPayloads(html, tipo, valor) {
   $('textarea').each((_, el) => {
     const id = $(el).attr('id') || '';
     if (!id.includes('hl_parametrosentrada')) return;
-    const raw = $(el).text();
-    if (!raw.includes('"type":"AnticipoContabSet.create"')) return; // descarta GET LogById
     let payload;
     try {
-      payload = JSON.parse(raw);
+      payload = JSON.parse($(el).text());
     } catch {
       return;
     }
+    // Anticipos de flota de tercero: create o update (se reenvían igual). Descarta los GET LogById.
+    if (!/^Anticipo\w*Set\.(create|update)$/.test(payload?.type || '')) return;
     // Siempre mostramos ambos: planilla (del payload) y consolidado (del grid). Por consolidado ya
     // conocemos el valor; por planilla lo sacamos de la fila. Una planilla puede traer varias
     // transferencias de consolidados distintos (una fila por cada una).

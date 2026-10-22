@@ -64,6 +64,7 @@ export async function procesarPayloads(payloads) {
       httpStatus: null,
       mensaje: '',
       info: null,
+      entrada: item.payload, // lo que se envia a SAP (para la columna "Entrada" del reporte)
     };
     try {
       const creado = await crearAnticipo(item.payload);
