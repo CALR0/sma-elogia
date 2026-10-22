@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-brand-50 text-slate-800;
+  }
+  .dark body {
+    @apply bg-slate-950 text-slate-200;
+  }
+}
+
+/* scrollbar discreto */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #b7cdbd;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}

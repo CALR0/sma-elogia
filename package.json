@@ -1,0 +1,30 @@
+{
+  "name": "migracion-anticipos-sap",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Migración de anticipos a SAP. Login por usuario contra Silogtran (sesión cifrada, sin BD), reenvío al API de AWS y confirmación. Frontend React (Vercel) + API serverless.",
+  "main": "server.js",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev:server": "node --watch server.js",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently -n api,web -c green,magenta \"node --watch server.js\" \"npm run dev --prefix client\"",
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "install:all": "npm install && npm install --prefix client"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "cheerio": "^1.0.0",
+    "cookie": "^0.6.0",
+    "express": "^4.21.2",
+    "puppeteer-core": "^25.15.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "dotenv": "^16.4.5"
+  }
+}
