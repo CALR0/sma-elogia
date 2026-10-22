@@ -32,15 +32,25 @@ export async function crearAnticipo(payload) {
   return { httpStatus: resp.status, simulated: false, id, body };
 }
 
-export async function confirmarLog(id) {
-  const resp = await fetch(`${AWS_API_BASE}/logs/${encodeURIComponent(id)}`);
-  let body = null;
-  try {
-    body = await resp.json();
-  } catch {
-    body = null;
+// El procesamiento en SAP es asincrono: tras el POST, el log existe pero el status/message
+// (exito o error final) aparece ~1-2 s despues. Por eso se consulta con reintentos cortos en vez
+// de una sola lectura inmediata, que marcaba falsos "Error / (sin mensaje)".
+export async function confirmarLog(id, { intentos = 6, esperaMs = 1500 } = {}) {
+  let ultimo = { httpStatus: null, body: null };
+  for (let i = 0; i < intentos; i++) {
+    const resp = await fetch(`${AWS_API_BASE}/logs/${encodeURIComponent(id)}`);
+    let body = null;
+    try {
+      body = await resp.json();
+    } catch {
+      body = null;
+    }
+    ultimo = { httpStatus: resp.status, body };
+    // Listo cuando SAP ya dejo un estado final (success, o un message de error)
+    if (resp.status === 200 && body && (body.status === 'success' || body.message)) return ultimo;
+    if (i < intentos - 1) await new Promise((r) => setTimeout(r, esperaMs));
   }
-  return { httpStatus: resp.status, body };
+  return ultimo;
 }
 
 // Toma una lista de payloads (de Silogtran) y para cada uno crea + confirma. Devuelve filas de tabla.

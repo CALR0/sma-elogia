@@ -57,6 +57,23 @@ function camposFormulario(html) {
 }
 
 // Extrae los payloads del metodo de creacion del HTML de resultados del Log de la Interfaz.
+// Para MOSTRAR: las planillas son como "0101222750"; si las consultan sin el 0 inicial ("101222750")
+// se antepone un 0 para la tabla/reporte. Si ya trae 0 o no es numérica, queda igual. No afecta la
+// creación (que usa el payload de Silogtran tal cual).
+export function normalizarPlanilla(v) {
+  const s = String(v ?? '').trim();
+  return /^[1-9]\d*$/.test(s) ? '0' + s : s;
+}
+
+// En cada fila del grid, el "Documento" (consolidado de transferencia) viene en un input hl_documento
+// cuyo value trae un <a ...contra_codigo=NNN>NNN</a> (HTML escapado). Devuelve el número o null.
+function extraerConsolidado($, idTextarea) {
+  const idDoc = idTextarea.replace('_hl_parametrosentrada', '_hl_documento');
+  const v = $(`#${idDoc}`).attr('value') || '';
+  const m = v.match(/contra_codigo=(\d+)/) || v.replace(/<[^>]*>/g, ' ').match(/(\d+)/);
+  return m ? m[1] : null;
+}
+
 function parsearPayloads(html, tipo, valor) {
   const $ = cheerio.load(html);
   const resultados = [];
@@ -71,9 +88,12 @@ function parsearPayloads(html, tipo, valor) {
     } catch {
       return;
     }
+    // Siempre mostramos ambos: planilla (del payload) y consolidado (del grid). Por consolidado ya
+    // conocemos el valor; por planilla lo sacamos de la fila. Una planilla puede traer varias
+    // transferencias de consolidados distintos (una fila por cada una).
     resultados.push({
-      planilla: payload?.data?.Zplanilla || '?',
-      consolidado: tipo === 'consolidado' ? valor : null,
+      planilla: normalizarPlanilla(payload?.data?.Zplanilla || (tipo === 'planilla' ? valor : '?')),
+      consolidado: tipo === 'consolidado' ? valor : extraerConsolidado($, id),
       payload,
     });
   });

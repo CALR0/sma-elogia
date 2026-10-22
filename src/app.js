@@ -3,7 +3,7 @@
 import express from 'express';
 import * as cookieLib from 'cookie';
 import { sellar, abrir } from './sello.js';
-import { Silogtran, SilogtranError } from './silogtran.js';
+import { Silogtran, SilogtranError, normalizarPlanilla } from './silogtran.js';
 import { procesarPayloads, simulaCreacion } from './anticipos.js';
 
 const SILOG_BASE_URL = process.env.SILOG_BASE_URL || 'https://construproyec.colombiasoftware.net';
@@ -122,7 +122,7 @@ export function crearApp() {
           rows: [
             {
               consolidado: tipo === 'consolidado' ? valor : null,
-              planilla: tipo === 'planilla' ? valor : '-',
+              planilla: tipo === 'planilla' ? normalizarPlanilla(valor) : '-',
               estadoMigracion: 'Error',
               httpStatus: null,
               mensaje: 'No se encontraron registros en Silogtran para este criterio.',
