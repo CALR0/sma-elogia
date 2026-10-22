@@ -6,6 +6,7 @@ import { obtenerSesion, cerrarSesion } from './lib/api.js';
 export default function App() {
   const [sesion, setSesion] = useState(null); // { usuario }
   const [cargando, setCargando] = useState(true);
+  const [cerrando, setCerrando] = useState(false);
 
   useEffect(() => {
     obtenerSesion()
@@ -17,12 +18,14 @@ export default function App() {
   }, []);
 
   async function salir() {
+    setCerrando(true);
     try {
-      await cerrarSesion();
-    } catch {
-      /* ignorar */
+      // Minimo visible para que el "Cerrando sesion..." no parpadee si el cierre es instantaneo.
+      await Promise.all([cerrarSesion().catch(() => {}), new Promise((r) => setTimeout(r, 500))]);
+    } finally {
+      setSesion(null);
+      setCerrando(false);
     }
-    setSesion(null);
   }
 
   if (cargando) {
@@ -33,8 +36,18 @@ export default function App() {
     );
   }
 
-  if (!sesion) {
-    return <Login onLogin={(usuario) => setSesion({ usuario })} />;
-  }
-  return <Migracion sesion={sesion} onLogout={salir} />;
+  return (
+    <>
+      {!sesion ? <Login onLogin={(usuario) => setSesion({ usuario })} /> : <Migracion sesion={sesion} onLogout={salir} />}
+
+      {cerrando && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-white/75 backdrop-blur-sm dark:bg-slate-950/75">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-brand-300 border-t-brand-600" />
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Cerrando sesión…</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
