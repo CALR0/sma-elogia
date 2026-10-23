@@ -53,10 +53,26 @@ export async function confirmarLog(id, { intentos = 6, esperaMs = 1500 } = {}) {
   return ultimo;
 }
 
+// Restriccion anti-duplicados: consulta si ese anticipo (por su id de evento) YA migro con exito en
+// SAP. Si es asi, no se debe volver a crear. Devuelve el log existente o null.
+async function yaMigrado(id) {
+  if (!id) return null;
+  try {
+    const { httpStatus, body } = await confirmarLog(id, { intentos: 1 });
+    if (httpStatus === 200 && body && body.status === 'success') return body;
+  } catch {
+    /* si la verificacion falla no se bloquea: se intenta crear igual */
+  }
+  return null;
+}
+
 // Toma una lista de payloads (de Silogtran) y para cada uno crea + confirma. Devuelve filas de tabla.
+// No permite procesar algo duplicado (misma id dentro del lote) ni algo que ya fue creado en SAP.
 export async function procesarPayloads(payloads) {
   const rows = [];
+  const vistos = new Set(); // ids ya procesados en este lote (evita duplicados en la misma lista)
   for (const item of payloads) {
+    const id = item.payload?.id || null;
     const row = {
       consolidado: item.consolidado,
       planilla: item.planilla,
@@ -66,7 +82,30 @@ export async function procesarPayloads(payloads) {
       info: null,
       entrada: item.payload, // lo que se envia a SAP (para la columna "Entrada" del reporte)
     };
+
+    // 1) Duplicado dentro del mismo envio: no se vuelve a procesar.
+    if (id && vistos.has(id)) {
+      row.estadoMigracion = 'Duplicado';
+      row.mensaje = 'Duplicado en la lista: ya se procesó en este mismo envío. No se reenvió.';
+      rows.push(row);
+      continue;
+    }
+    if (id) vistos.add(id);
+
     try {
+      // 2) Ya creado en SAP: no se permite crear de nuevo (idempotencia). No aplica en modo simulado.
+      if (!simulaCreacion()) {
+        const previo = await yaMigrado(id);
+        if (previo) {
+          row.estadoMigracion = 'Duplicado';
+          row.httpStatus = 200;
+          row.mensaje = `Ya existe: este anticipo ya fue migrado${previo.response?.Belnr ? ` (documento ${previo.response.Belnr})` : ''}. No se reenvió para evitar duplicarlo.`;
+          row.info = { createdAt: previo.createdAt, data: previo.data, entity: previo.entity, id: previo.id };
+          rows.push(row);
+          continue;
+        }
+      }
+
       const creado = await crearAnticipo(item.payload);
       row.httpStatus = creado.httpStatus;
       row.simulated = creado.simulated;

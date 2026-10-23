@@ -1,20 +1,23 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, XCircle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { construirRespuesta } from '../lib/export.js';
 
 const PAGE_SIZE = 5;
 
 function EstadoBadge({ estado }) {
-  const ok = estado === 'Exitoso';
+  const estilos = {
+    Exitoso: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900',
+    Duplicado: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-900',
+    Error: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-900',
+  };
+  const Icono = estado === 'Exitoso' ? CheckCircle2 : estado === 'Duplicado' ? AlertTriangle : XCircle;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        ok
-          ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900'
-          : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-900'
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+        estilos[estado] || estilos.Error
       }`}
     >
-      {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+      <Icono className="h-3.5 w-3.5" />
       {estado}
     </span>
   );

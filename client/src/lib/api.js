@@ -46,3 +46,23 @@ export function parseEntradas(texto) {
     .map((t) => t.trim())
     .filter(Boolean);
 }
+
+// Las planillas son como "0101222750"; si vienen sin el 0 inicial ("101222750") se antepone para
+// comparar. Asi "101222750" y "0101222750" se detectan como la misma (duplicado).
+export function normalizarPlanilla(v) {
+  const s = String(v ?? '').trim();
+  return /^[1-9]\d*$/.test(s) ? '0' + s : s;
+}
+
+// Quita duplicados de la lista (planillas se comparan normalizando el 0 inicial). Conserva el orden.
+export function dedupeEntradas(lista, tipo) {
+  const vistos = new Set();
+  const unicos = [];
+  for (const v of lista) {
+    const clave = tipo === 'planilla' ? normalizarPlanilla(v) : String(v).trim();
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    unicos.push(v);
+  }
+  return unicos;
+}

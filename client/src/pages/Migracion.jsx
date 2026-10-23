@@ -10,10 +10,11 @@ import {
   CheckCircle2,
   XCircle,
   ListChecks,
+  AlertTriangle,
 } from 'lucide-react';
 import ResultsTable from '../components/ResultsTable.jsx';
 import AccountMenu from '../components/AccountMenu.jsx';
-import { procesarValor, parseEntradas } from '../lib/api.js';
+import { procesarValor, parseEntradas, dedupeEntradas } from '../lib/api.js';
 import { exportarExcel } from '../lib/export.js';
 
 export default function Migracion({ sesion, onLogout }) {
@@ -25,6 +26,8 @@ export default function Migracion({ sesion, onLogout }) {
   const [error, setError] = useState('');
 
   const entradas = useMemo(() => parseEntradas(texto), [texto]);
+  const unicas = useMemo(() => dedupeEntradas(entradas, tipo), [entradas, tipo]);
+  const duplicados = entradas.length - unicas.length;
   const resumen = useMemo(() => {
     const ok = rows.filter((r) => r.estadoMigracion === 'Exitoso').length;
     return { total: rows.length, ok, err: rows.length - ok };
@@ -32,7 +35,7 @@ export default function Migracion({ sesion, onLogout }) {
 
   async function procesar() {
     setError('');
-    const lista = parseEntradas(texto);
+    const lista = dedupeEntradas(parseEntradas(texto), tipo); // no se procesan duplicados
     if (!lista.length) {
       setError('Ingresa al menos una ' + (tipo === 'planilla' ? 'planilla' : 'consolidado') + '.');
       return;
@@ -129,14 +132,25 @@ export default function Migracion({ sesion, onLogout }) {
 
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                 Separador: coma, espacio o salto de línea.{' '}
-                <span className="font-medium text-slate-600 dark:text-slate-300">{entradas.length}</span>{' '}
-                {tipo === 'planilla' ? 'planilla(s)' : 'consolidado(s)'}.
+                <span className="font-medium text-slate-600 dark:text-slate-300">{unicas.length}</span>{' '}
+                {tipo === 'planilla' ? 'planilla(s)' : 'consolidado(s)'}
+                {duplicados > 0 ? ' únicas.' : '.'}
               </p>
+
+              {duplicados > 0 && (
+                <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900">
+                  <AlertTriangle className="mt-px h-4 w-4 flex-none" />
+                  <span>
+                    Se ignorará{duplicados === 1 ? '' : 'n'} <b>{duplicados}</b> entrada{duplicados === 1 ? '' : 's'} duplicada
+                    {duplicados === 1 ? '' : 's'}: solo se procesa una vez cada {tipo === 'planilla' ? 'planilla' : 'consolidado'}.
+                  </span>
+                </div>
+              )}
 
               <div className="mt-4 flex items-center gap-2">
                 <button
                   onClick={procesar}
-                  disabled={procesando || !entradas.length}
+                  disabled={procesando || !unicas.length}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {procesando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
